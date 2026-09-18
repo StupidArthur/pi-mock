@@ -77,17 +77,16 @@ def test_batch_api(client):
     response = client.post(
         "/piwebapi/batch",
         json={
-            "Requests": [
-                {"Method": "GET", "Resource": "/piwebapi/streams/POINT_TEMP_001/value"},
-                {
-                    "Method": "POST",
-                    "Resource": "/piwebapi/streams/POINT_TEMP_001/value",
-                    "Content": {"Value": 77.7},
-                },
-            ]
+            "req-1": {"Method": "GET", "Resource": "/piwebapi/streams/POINT_TEMP_001/value"},
+            "req-2": {
+                "Method": "POST",
+                "Resource": "/piwebapi/streams/POINT_TEMP_001/value",
+                "Content": {"Value": 77.7},
+            },
         },
     )
     assert response.status_code == 200
-    responses = response.json()["Responses"]
-    assert responses[0]["Status"] == 200
-    assert responses[1]["Status"] == 202
+    responses = response.json()
+    assert responses["req-1"]["Status"] == 200
+    assert responses["req-2"]["Status"] == 202
+    assert client.get("/piwebapi/streams/POINT_TEMP_001/value").json()["Value"] == 77.7

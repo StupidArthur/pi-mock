@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
 from app import repository
+from app.core import config as config_module
 from app.core import fault
-from app.core.config import settings
 from app.models.mock import (
     EndpointFaultIn,
     GenerateRequest,
@@ -37,13 +37,18 @@ def set_config(patch: MockConfigPatch = Body(default_factory=MockConfigPatch)):
         return JSONResponse(
             status_code=400, content={"Errors": ["write_status must be 202 or 204."]}
         )
+    if "auth_type" in data and data["auth_type"] not in ("basic",):
+        return JSONResponse(
+            status_code=400,
+            content={"Errors": ["auth_type must be 'basic'."]},
+        )
     config = fault.state.patch_config(data)
     return config.model_dump()
 
 
 @router.post("/reset")
 def reset():
-    point_service.bootstrap(settings)
+    point_service.reset_to_defaults(config_module.settings)
     return {"success": True}
 
 
@@ -69,10 +74,6 @@ def clear_faults():
 @router.post("/tags")
 def create_tag(payload: TagCreate = Body(...)):
     repo = repository.get_repo()
-    if repo.get_point_by_name(payload.name):
-        return JSONResponse(
-            status_code=409, content={"Errors": ["PI Point already exists."]}
-        )
     if payload.point_type not in POINT_TYPES:
         return JSONResponse(
             status_code=400, content={"Errors": ["Unsupported PointType."]}
@@ -81,7 +82,7 @@ def create_tag(payload: TagCreate = Body(...)):
     point = PointRecord(
         web_id=web_id,
         name=payload.name,
-        path=build_path(settings.server_name, payload.name),
+        path=payload.path or build_path(config_module.settings.server_name, payload.name),
         descriptor=payload.descriptor,
         point_type=payload.point_type,
         engineering_units=payload.engineering_units,
@@ -89,6 +90,12 @@ def create_tag(payload: TagCreate = Body(...)):
         span=payload.span,
         digital_set_name=payload.digital_set_name,
     )
+    conflict = repo.find_point_conflict(point)
+    if conflict:
+        return JSONResponse(
+            status_code=409,
+            content={"Errors": [f"PI Point {conflict} already exists."]},
+        )
     repo.create_point(point)
     if payload.snapshot is not None:
         value = stream_service.coerce_value(point.point_type, payload.snapshot)
@@ -99,11 +106,13 @@ def create_tag(payload: TagCreate = Body(...)):
 @router.post("/tags/{tag}/quality")
 def set_quality(tag: str, payload: QualityPatch = Body(...)):
     point = point_service.find_point(tag)
-    key = point.name if point else tag
-    record = fault.state.set_quality(
-        key, payload.good, payload.questionable, payload.substituted
+    if not point:
+        return JSONResponse(
+            status_code=404, content={"Errors": ["PI Point not found."]}
+        )
+    return fault.state.set_quality(
+        point.name, payload.good, payload.questionable, payload.substituted
     )
-    return record
 
 
 @router.post("/data/generate")

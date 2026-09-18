@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import threading
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from app.models.point import PointRecord, normalize_path
@@ -57,12 +58,32 @@ def _load_value(text):
 class SQLiteRepository(Repository):
     def __init__(self, path: str) -> None:
         self._lock = threading.RLock()
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA)
         self._conn.commit()
 
-    def reset(self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]) -> None:
+    def is_initialized(self) -> bool:
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) AS total FROM points").fetchone()
+        return bool(row and int(row["total"]) > 0)
+
+    def initialize_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
+        with self._lock:
+            if self.is_initialized():
+                return
+            for point in points:
+                self._insert_point(point)
+            for web_id, value in snapshots.items():
+                self._upsert_snapshot(web_id, value)
+            self._conn.commit()
+
+    def reset_to_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
         with self._lock:
             self._conn.execute("DELETE FROM points")
             self._conn.execute("DELETE FROM snapshots")
@@ -156,6 +177,26 @@ class SQLiteRepository(Repository):
         with self._lock:
             self._insert_point(point)
             self._conn.commit()
+
+    def find_point_conflict(self, point: PointRecord) -> Optional[str]:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT web_id FROM points WHERE web_id = ?", (point.web_id,)
+            ).fetchone()
+            if row:
+                return "WebId"
+            row = self._conn.execute(
+                "SELECT web_id FROM points WHERE lower(name) = ?",
+                (point.name.lower(),),
+            ).fetchone()
+            if row:
+                return "Name"
+            rows = self._conn.execute("SELECT path FROM points").fetchall()
+        target_path = normalize_path(point.path)
+        for row in rows:
+            if normalize_path(row["path"]) == target_path:
+                return "Path"
+        return None
 
     def get_snapshot(self, web_id: str) -> Optional[ValueRecord]:
         with self._lock:

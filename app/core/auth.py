@@ -6,12 +6,15 @@ from typing import Mapping
 from app.core import fault
 
 
+SUPPORTED_AUTH_TYPES = {"basic"}
+
+
 def check_auth(headers: Mapping[str, str]) -> bool:
     config = fault.state.config
     if not config.auth_enabled:
         return True
-    if config.auth_type != "basic":
-        return True
+    if config.auth_type not in SUPPORTED_AUTH_TYPES:
+        return False
     raw = headers.get("authorization") or headers.get("Authorization")
     if not raw:
         return False

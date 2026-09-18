@@ -50,6 +50,7 @@ class GenerateRequest(BaseModel):
 class TagCreate(BaseModel):
     name: str
     web_id: Optional[str] = None
+    path: Optional[str] = None
     descriptor: str = ""
     point_type: str = "Float32"
     engineering_units: str = ""

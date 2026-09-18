@@ -14,8 +14,15 @@ if ((Invoke-RestMethod "$Base/health").status -eq "ok") { Pass "health" } else {
 $servers = Invoke-RestMethod "$Pi/dataservers"
 if ($servers.Items[0].WebId -eq "SERVER_TEST_PI") { Pass "dataserver" } else { Fail "dataserver" }
 
+$byName = Invoke-RestMethod "$Pi/dataservers?name=TEST-PI"
+if ($byName.Name -eq "TEST-PI") { Pass "dataserver discovery" } else { Fail "dataserver discovery" }
+
+$serverPoints = Invoke-RestMethod "$Pi/dataservers/SERVER_TEST_PI/points?nameFilter=temp*"
+if ($serverPoints.Items[0].Name -eq "temperature") { Pass "dataserver points" } else { Fail "dataserver points" }
+
 $point = Invoke-RestMethod "$Pi/points?path=%5C%5CTEST-PI%5Ctemperature"
 if ($point.Name -eq "temperature") { Pass "point" } else { Fail "point" }
+if ($point.Links.Value) { Pass "point links" } else { Fail "point links" }
 $webId = $point.WebId
 
 $value = Invoke-RestMethod "$Pi/streams/$webId/value"

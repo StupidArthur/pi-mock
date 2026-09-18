@@ -23,6 +23,9 @@ class Settings:
         self.port: int = 8080
         self.server_name: str = "TEST-PI"
         self.auth_enabled: bool = False
+        self.auth_type: str = "basic"
+        self.auth_username: str = "piuser"
+        self.auth_password: str = "password123"
         self.storage_type: str = "sqlite"
         self.log_level: str = "INFO"
         self.db_path: str = str(BASE_DIR / "data" / "mock_pi.db")
@@ -48,6 +51,12 @@ class Settings:
             self.server_name = str(pi["server_name"])
         if "enabled" in auth:
             self.auth_enabled = _as_bool(auth["enabled"])
+        if "type" in auth:
+            self.auth_type = str(auth["type"])
+        if "username" in auth:
+            self.auth_username = str(auth["username"])
+        if "password" in auth:
+            self.auth_password = str(auth["password"])
         if "type" in storage:
             self.storage_type = str(storage["type"])
         if "path" in storage:
@@ -62,6 +71,9 @@ class Settings:
             "PI_PORT": ("port", _as_int),
             "PI_SERVER_NAME": ("server_name", str),
             "PI_AUTH_ENABLED": ("auth_enabled", _as_bool),
+            "PI_AUTH_TYPE": ("auth_type", str),
+            "PI_AUTH_USERNAME": ("auth_username", str),
+            "PI_AUTH_PASSWORD": ("auth_password", str),
             "PI_STORAGE_TYPE": ("storage_type", str),
             "PI_LOG_LEVEL": ("log_level", str),
             "PI_DB_PATH": ("db_path", str),
@@ -80,6 +92,8 @@ class Settings:
         settings.load_yaml(path)
         settings.apply_env()
         settings.verbose = verbose
+        if not Path(settings.db_path).is_absolute():
+            settings.db_path = str(BASE_DIR / settings.db_path)
         return settings
 
 

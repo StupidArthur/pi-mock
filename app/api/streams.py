@@ -34,7 +34,10 @@ def get_recorded(
     point = point_service.find_point(web_id)
     if not point:
         return _not_found()
-    items = stream_service.get_recorded(point, startTime, endTime, maxCount)
+    try:
+        items = stream_service.get_recorded(point, startTime, endTime, maxCount)
+    except ValueError as error:
+        return JSONResponse(status_code=400, content={"Errors": [str(error)]})
     return {"Items": items}
 
 

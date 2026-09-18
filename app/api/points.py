@@ -9,6 +9,12 @@ from app.services import point_service
 router = APIRouter(prefix="/piwebapi", tags=["points"])
 
 
+def _server_web_id() -> str:
+    from app.core import config as config_module
+
+    return point_service.server_web_id(config_module.settings.server_name)
+
+
 @router.get("/points")
 def list_points(path: Optional[str] = Query(default=None)):
     repo = repository.get_repo()
@@ -18,8 +24,10 @@ def list_points(path: Optional[str] = Query(default=None)):
             return JSONResponse(
                 status_code=404, content={"Errors": ["PI Point not found."]}
             )
-        return point.to_dict()
-    return {"Items": [point.to_dict() for point in repo.list_points()]}
+        return point.to_dict(_server_web_id())
+    return {
+        "Items": [point.to_dict(_server_web_id()) for point in repo.list_points()]
+    }
 
 
 @router.get("/points/{web_id}")
@@ -29,4 +37,4 @@ def get_point(web_id: str):
         return JSONResponse(
             status_code=404, content={"Errors": ["PI Point not found."]}
         )
-    return point.to_dict()
+    return point.to_dict(_server_web_id())

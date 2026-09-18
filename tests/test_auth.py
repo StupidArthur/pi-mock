@@ -53,3 +53,17 @@ def test_reset_disables_auth(client):
     client.post("/mock/config", json={"auth_enabled": True})
     client.post("/mock/reset")
     assert client.get("/piwebapi/dataservers").status_code == 200
+
+
+def test_invalid_auth_type_rejected(client):
+    response = client.post("/mock/config", json={"auth_type": "kerberos"})
+    assert response.status_code == 400
+
+
+def test_auth_cannot_fail_open(client):
+    client.post("/mock/config", json={"auth_enabled": True, "auth_type": "basic"})
+    assert client.get("/piwebapi/dataservers").status_code == 401
+    client.post("/mock/reset")
+    client.post("/mock/config", json={"auth_enabled": True})
+    assert client.get("/piwebapi/dataservers").status_code == 401
+    assert client.get("/piwebapi/dataservers", headers=_basic("piuser", "password123")).status_code == 200

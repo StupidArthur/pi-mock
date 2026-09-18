@@ -122,12 +122,44 @@ def point_quality_keys(point: PointRecord) -> List[str]:
     return [point.web_id, point.name, normalize_path(point.path)]
 
 
+def _apply_runtime_config(settings) -> None:
+    from app.core import fault
+
+    config = fault.state.config.model_copy(
+        update={
+            "auth_enabled": settings.auth_enabled,
+            "auth_type": settings.auth_type,
+            "username": settings.auth_username,
+            "password": settings.auth_password,
+        }
+    )
+    fault.state.config = config
+
+
 def bootstrap(settings) -> None:
     from app import repository
     from app.core import fault
 
     points, snapshots = seed_data(settings.server_name, settings.example_data_path)
     fault.state.reset()
-    repository.get_repo().reset(points, snapshots)
+    repository.get_repo().initialize_defaults(points, snapshots)
+    _apply_runtime_config(settings)
+    _apply_default_quality()
+
+
+def reset_to_defaults(settings) -> None:
+    from app import repository
+    from app.core import fault
+
+    points, snapshots = seed_data(settings.server_name, settings.example_data_path)
+    fault.state.reset()
+    repository.get_repo().reset_to_defaults(points, snapshots)
+    _apply_runtime_config(settings)
+    _apply_default_quality()
+
+
+def _apply_default_quality() -> None:
+    from app.core import fault
+
     for key in DEFAULT_BAD_QUALITY_KEYS:
         fault.state.set_quality(key, False, True, False)

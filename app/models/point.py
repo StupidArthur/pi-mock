@@ -16,9 +16,17 @@ class PointRecord:
     span: float = 100
     digital_set_name: Optional[str] = None
 
-    def to_dict(self) -> dict:
-        data = asdict(self)
+    def links(self, server_web_id: str) -> dict:
         return {
+            "Self": "/piwebapi/points/" + self.web_id,
+            "DataServer": "/piwebapi/dataservers/" + server_web_id,
+            "Value": "/piwebapi/streams/" + self.web_id + "/value",
+            "RecordedData": "/piwebapi/streams/" + self.web_id + "/recorded",
+        }
+
+    def to_dict(self, server_web_id: Optional[str] = None) -> dict:
+        data = asdict(self)
+        result = {
             "WebId": data["web_id"],
             "Name": data["name"],
             "Path": data["path"],
@@ -29,6 +37,12 @@ class PointRecord:
             "Span": data["span"],
             "DigitalSetName": data["digital_set_name"],
         }
+        if server_web_id:
+            result["Links"] = self.links(server_web_id)
+        return result
+
+    def to_summary_dict(self) -> dict:
+        return {"WebId": self.web_id, "Name": self.name, "Path": self.path}
 
 
 def build_path(server_name: str, name: str) -> str:

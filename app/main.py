@@ -11,6 +11,8 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from app import repository
 from app.api import batch, dataservers, mock_control, points, streams
 from app.core import auth, fault
+from typing import Optional
+
 from app.core.config import Settings, settings
 from app.core.logging import configure_logging, get_logger
 from app.services import point_service
@@ -208,51 +210,60 @@ class FaultMiddleware:
         )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    configure_logging(settings.log_level)
-    repository.init_repo(settings)
-    point_service.bootstrap(settings)
-    logger.info(
-        "Mock PI Server started server=%s storage=%s",
-        settings.server_name,
-        settings.storage_type,
+def create_app(runtime: Optional[Settings] = None) -> FastAPI:
+    from app.core import config as config_module
+
+    active = runtime or settings
+    config_module.settings = active
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        configure_logging(active.log_level)
+        repository.init_repo(active)
+        point_service.bootstrap(active)
+        logger.info(
+            "Mock PI Server started server=%s storage=%s db=%s",
+            active.server_name,
+            active.storage_type,
+            active.db_path,
+        )
+        yield
+
+    application = FastAPI(
+        title="Mock PI Web API",
+        version="1.0",
+        description="PI Web API compatible mock for testing",
+        lifespan=lifespan,
     )
-    yield
+    application.add_middleware(FaultMiddleware)
+
+    application.include_router(mock_control.router)
+    application.include_router(dataservers.router)
+    application.include_router(points.router)
+    application.include_router(streams.router)
+    application.include_router(batch.router)
+
+    @application.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    @application.get("/piwebapi")
+    def root():
+        return {
+            "ProductTitle": "Mock PI Web API",
+            "Version": "1.0",
+            "Links": {
+                "DataServers": "/piwebapi/dataservers",
+                "Points": "/piwebapi/points",
+                "Streams": "/piwebapi/streams",
+                "Batch": "/piwebapi/batch",
+            },
+        }
+
+    return application
 
 
-app = FastAPI(
-    title="Mock PI Web API",
-    version="1.0",
-    description="PI Web API compatible mock for testing",
-    lifespan=lifespan,
-)
-app.add_middleware(FaultMiddleware)
-
-app.include_router(mock_control.router)
-app.include_router(dataservers.router)
-app.include_router(points.router)
-app.include_router(streams.router)
-app.include_router(batch.router)
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.get("/piwebapi")
-def root():
-    return {
-        "ProductTitle": "Mock PI Web API",
-        "Version": "1.0",
-        "Links": {
-            "DataServers": "/piwebapi/dataservers",
-            "Points": "/piwebapi/points",
-            "Streams": "/piwebapi/streams",
-            "Batch": "/piwebapi/batch",
-        },
-    }
+app = create_app(settings)
 
 
 def run() -> None:
@@ -275,8 +286,10 @@ def run() -> None:
 
     import uvicorn
 
+    application = create_app(runtime)
+
     uvicorn.run(
-        "app.main:app",
+        application,
         host=runtime.host,
         port=runtime.port,
         log_level=level.lower(),

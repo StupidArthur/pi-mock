@@ -105,6 +105,14 @@ def test_bad_quality_tag(client):
     assert body["Substituted"] is False
 
 
+def test_quality_unknown_tag_returns_404(client):
+    response = client.post(
+        "/mock/tags/DOES_NOT_EXIST/quality",
+        json={"good": False, "questionable": True, "substituted": False},
+    )
+    assert response.status_code == 404
+
+
 def test_set_quality(client):
     response = client.post(
         "/mock/tags/sinusoid/quality",

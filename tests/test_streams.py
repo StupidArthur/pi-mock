@@ -78,6 +78,24 @@ def test_recorded_accepts_timezone_offsets(client):
     assert response.status_code == 200
 
 
+def test_recorded_invalid_start_time_returns_400(client):
+    response = client.get(
+        "/piwebapi/streams/POINT_TEMP_001/recorded",
+        params={"startTime": "invalid-time"},
+    )
+    assert response.status_code == 400
+    assert "Invalid startTime" in response.json()["Errors"][0]
+
+
+def test_recorded_invalid_end_time_returns_400(client):
+    response = client.get(
+        "/piwebapi/streams/POINT_TEMP_001/recorded",
+        params={"startTime": "2026-01-01T00:00:00Z", "endTime": "not-a-time"},
+    )
+    assert response.status_code == 400
+    assert "Invalid endTime" in response.json()["Errors"][0]
+
+
 def test_history_order_desc(client):
     client.post(
         "/mock/data/generate",

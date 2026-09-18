@@ -7,6 +7,9 @@ pi:
 
 auth:
   enabled: false
+  type: basic
+  username: piuser
+  password: password123
 
 storage:
   type: sqlite

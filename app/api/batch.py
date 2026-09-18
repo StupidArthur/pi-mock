@@ -34,16 +34,24 @@ def _handle(method: str, resource: str, content: Any) -> Dict[str, Any]:
 
 
 @router.post("/batch")
-def batch(payload: Dict[str, Any] = Body(default_factory=dict)):
-    responses = []
-    for request in payload.get("Requests", []):
+def batch(payload: Dict[str, Any] = Body(...)):
+    if not isinstance(payload, dict):
+        return {"Errors": ["Batch body must be an object keyed by request id."]}
+    responses: Dict[str, Any] = {}
+    for request_id, request in payload.items():
+        if not isinstance(request, dict):
+            responses[request_id] = {
+                "Status": 400,
+                "Content": {"Errors": ["Batch request must be an object."]},
+            }
+            continue
+        resource = request.get("Resource") or request.get("resource") or ""
+        method = str(request.get("Method") or request.get("method") or "GET").upper()
+        content = request.get("Content")
+        if content is None:
+            content = request.get("content")
         try:
-            result = _handle(
-                str(request.get("Method", "GET")).upper(),
-                request.get("Resource", ""),
-                request.get("Content"),
-            )
+            responses[request_id] = _handle(method, resource, content)
         except (ValueError, stream_service.ValidationError) as error:
-            result = {"Status": 400, "Content": {"Errors": [str(error)]}}
-        responses.append(result)
-    return {"Responses": responses}
+            responses[request_id] = {"Status": 400, "Content": {"Errors": [str(error)]}}
+    return responses

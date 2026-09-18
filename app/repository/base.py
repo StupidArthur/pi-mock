@@ -7,7 +7,19 @@ from app.models.value import ValueRecord
 
 class Repository(ABC):
     @abstractmethod
-    def reset(self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]) -> None:
+    def is_initialized(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def initialize_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset_to_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -28,6 +40,10 @@ class Repository(ABC):
 
     @abstractmethod
     def create_point(self, point: PointRecord) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def find_point_conflict(self, point: PointRecord) -> Optional[str]:
         raise NotImplementedError
 
     @abstractmethod

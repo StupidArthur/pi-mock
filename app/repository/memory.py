@@ -13,7 +13,23 @@ class MemoryRepository(Repository):
         self._snapshots: Dict[str, ValueRecord] = {}
         self._recorded: Dict[str, List[ValueRecord]] = {}
 
-    def reset(self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]) -> None:
+    def is_initialized(self) -> bool:
+        with self._lock:
+            return bool(self._points)
+
+    def initialize_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
+        with self._lock:
+            if self._points:
+                return
+            self._points = {point.web_id: point for point in points}
+            self._snapshots = dict(snapshots)
+            self._recorded = {point.web_id: [] for point in points}
+
+    def reset_to_defaults(
+        self, points: List[PointRecord], snapshots: Dict[str, ValueRecord]
+    ) -> None:
         with self._lock:
             self._points = {point.web_id: point for point in points}
             self._snapshots = dict(snapshots)
@@ -49,6 +65,18 @@ class MemoryRepository(Repository):
         with self._lock:
             self._points[point.web_id] = point
             self._recorded.setdefault(point.web_id, [])
+
+    def find_point_conflict(self, point: PointRecord) -> Optional[str]:
+        target_path = normalize_path(point.path)
+        with self._lock:
+            for existing in self._points.values():
+                if existing.web_id == point.web_id:
+                    return "WebId"
+                if existing.name.lower() == point.name.lower():
+                    return "Name"
+                if normalize_path(existing.path) == target_path:
+                    return "Path"
+        return None
 
     def get_snapshot(self, web_id: str) -> Optional[ValueRecord]:
         with self._lock:

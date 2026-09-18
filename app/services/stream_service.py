@@ -79,8 +79,14 @@ def get_recorded(
 ) -> List[dict]:
     from app import repository
 
-    start_dt = parse_timestamp(start) if start else None
-    end_dt = parse_timestamp(end) if end else None
+    try:
+        start_dt = parse_timestamp(start) if start else None
+    except ValueError as error:
+        raise ValueError(f"Invalid startTime: {error}") from error
+    try:
+        end_dt = parse_timestamp(end) if end else None
+    except ValueError as error:
+        raise ValueError(f"Invalid endTime: {error}") from error
     start_epoch = start_dt.timestamp() if start_dt else None
     end_epoch = end_dt.timestamp() if end_dt else None
     values = repository.get_repo().query_recorded(

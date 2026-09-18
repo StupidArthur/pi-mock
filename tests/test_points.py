@@ -51,9 +51,45 @@ def test_create_point(client):
     assert value.json()["Value"] == 1.5
 
 
+def test_point_links(client):
+    body = client.get("/piwebapi/points/POINT_TEMP_001").json()
+    links = body["Links"]
+    assert links["Self"] == "/piwebapi/points/POINT_TEMP_001"
+    assert links["DataServer"] == "/piwebapi/dataservers/SERVER_TEST_PI"
+    assert links["Value"] == "/piwebapi/streams/POINT_TEMP_001/value"
+    assert links["RecordedData"] == "/piwebapi/streams/POINT_TEMP_001/recorded"
+
+
+def test_point_links_in_list(client):
+    body = client.get("/piwebapi/points", params={"path": "\\\\TEST-PI\\temperature"}).json()
+    assert body["Links"]["Value"] == "/piwebapi/streams/POINT_TEMP_001/value"
+
+
 def test_create_duplicate_point_conflict(client):
     response = client.post("/mock/tags", json={"name": "temperature"})
     assert response.status_code == 409
+
+
+def test_create_tag_duplicate_name(client):
+    response = client.post("/mock/tags", json={"name": "Temperature"})
+    assert response.status_code == 409
+
+
+def test_create_tag_duplicate_webid(client):
+    response = client.post(
+        "/mock/tags", json={"name": "brand_new", "web_id": "POINT_TEMP_001"}
+    )
+    assert response.status_code == 409
+    assert "WebId" in response.json()["Errors"][0]
+
+
+def test_create_tag_duplicate_path(client):
+    response = client.post(
+        "/mock/tags",
+        json={"name": "another", "path": "\\\\TEST-PI\\temperature"},
+    )
+    assert response.status_code == 409
+    assert "Path" in response.json()["Errors"][0]
 
 
 def test_create_point_bad_type(client):
