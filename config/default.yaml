@@ -1,0 +1,16 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+
+pi:
+  server_name: TEST-PI
+
+auth:
+  enabled: false
+
+storage:
+  type: sqlite
+  path: data/mock_pi.db
+
+logging:
+  level: INFO

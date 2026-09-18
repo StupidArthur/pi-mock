@@ -1,0 +1,34 @@
+services:
+  mock-pi-server:
+    build: .
+    container_name: mock-pi-server
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080
+    environment:
+      PI_STORAGE_TYPE: sqlite
+      PI_DB_PATH: /app/data/mock_pi.db
+      PI_LOG_LEVEL: INFO
+    ports:
+      - "8080:8080"
+    volumes:
+      - mock-data:/app/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health').read()"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  tcp-fault-server:
+    build: .
+    container_name: mock-pi-tcp-fault
+    command: python tcp_fault_server/server.py --host 0.0.0.0 --port 5450 --mode close
+    ports:
+      - "5450:5450"
+    depends_on:
+      - mock-pi-server
+
+volumes:
+  mock-data:

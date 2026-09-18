@@ -1,0 +1,92 @@
+{
+  "points": [
+    {
+      "name": "sinusoid",
+      "web_id": "POINT_SIN_001",
+      "descriptor": "Mock sinusoid",
+      "point_type": "Float32",
+      "engineering_units": "",
+      "zero": 0,
+      "span": 100,
+      "snapshot": 25.0,
+      "good": true
+    },
+    {
+      "name": "temperature",
+      "web_id": "POINT_TEMP_001",
+      "descriptor": "Mock temperature",
+      "point_type": "Float32",
+      "engineering_units": "degC",
+      "zero": 0,
+      "span": 100,
+      "snapshot": 25.5,
+      "good": true
+    },
+    {
+      "name": "pressure",
+      "web_id": "POINT_PRESS_001",
+      "descriptor": "Mock pressure",
+      "point_type": "Float32",
+      "engineering_units": "kPa",
+      "zero": 0,
+      "span": 200,
+      "snapshot": 101.3,
+      "good": true
+    },
+    {
+      "name": "flow",
+      "web_id": "POINT_FLOW_001",
+      "descriptor": "Mock flow",
+      "point_type": "Float32",
+      "engineering_units": "L/min",
+      "zero": 0,
+      "span": 200,
+      "snapshot": 50.0,
+      "good": true
+    },
+    {
+      "name": "status",
+      "web_id": "POINT_STATUS_001",
+      "descriptor": "Mock status",
+      "point_type": "String",
+      "engineering_units": "",
+      "zero": 0,
+      "span": 0,
+      "snapshot": "RUNNING",
+      "good": true
+    },
+    {
+      "name": "counter",
+      "web_id": "POINT_COUNT_001",
+      "descriptor": "Mock counter",
+      "point_type": "Int32",
+      "engineering_units": "count",
+      "zero": 0,
+      "span": 1000000,
+      "snapshot": 100,
+      "good": true
+    },
+    {
+      "name": "bad_quality",
+      "web_id": "POINT_BAD_001",
+      "descriptor": "Mock bad quality",
+      "point_type": "Float32",
+      "engineering_units": "degC",
+      "zero": 0,
+      "span": 100,
+      "snapshot": 23.5,
+      "good": false
+    },
+    {
+      "name": "empty_tag",
+      "web_id": "POINT_EMPTY",
+      "descriptor": "Mock empty tag",
+      "point_type": "Float32",
+      "engineering_units": "degC",
+      "zero": 0,
+      "span": 100,
+      "snapshot": null,
+      "good": true
+    }
+  ]
+}

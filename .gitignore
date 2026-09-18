@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Runtime data
+data/mock_pi.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs / temp
+*.log
+tmp_*
+
+# TLS certs
+cert/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
